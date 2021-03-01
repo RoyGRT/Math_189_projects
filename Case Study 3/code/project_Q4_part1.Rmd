@@ -1,0 +1,75 @@
+---
+title: "Case Study 3 Q4"
+author: - Bryan Talavera
+        - Ruotian Gao
+        - Ye Yint Win
+        - Camille Dunning
+        - Jared Dishman
+        - Abdiaziz Weheliye
+        - Yaoxin Li
+---
+```{r}
+library(hash)
+df <- read.table("hcmv.txt", header=TRUE)
+data <- df$location
+N <- 229354 # Base Pairs
+n <- 296 # number of Palindromes
+
+# 4: Finding the biggest cluster
+palindrome_intervals <- c(2500,3500,5000,7000)
+k_intervals <- ceiling(N / palindrome_intervals)
+max_count_k <- c()
+k_p_val <- c()
+lambda_hat_k <- c()
+
+
+for(k in k_intervals) {
+  
+  k_count <- as.vector(table(cut(data, breaks = seq(0, N, length.out = k+1), include.lowest = TRUE)))
+  lambda_hat <- mean(k_count)
+  lambda_hat_k <- c(lambda_hat_k, lambda_hat)
+  max_count_k <- c(max_count_k, max(k_count))
+  
+  #moving the values from k_count into our final table and casting to string
+  dict <- hash()
+  for (i in 0:max(k_count)) {
+    key <- toString(i)
+    dict[[key]] <- 0
+  }
+  key <- toString(max(k_count)+1)
+  dict[[key]] <- 0
+  
+  for (c in k_count) {
+    key <- toString(c)
+    dict[[key]] <- dict[[key]] + 1
+  }
+  # Shows our observed k_counts
+  observed_k_counts <- c()
+  for (i in 0:max(k_count)) {
+    key <- toString(i)
+    observed_k_counts <- c(observed_k_counts, dict[[key]])
+  }
+  key <- toString(max(k_count)+1)
+  observed_k_counts <- c(observed_k_counts, dict[[key]])
+  
+  # Getting our expected poisson results
+  k_expected_poisson <- c()
+  for (i in 0:max(k_count)) {
+    k_expected_poisson <- c(k_expected_poisson, dpois(i, lambda_hat))
+  }
+  k_expected_poisson <- c(k_expected_poisson, 1 - sum(k_expected_poisson))
+  
+  # Updating our expected value for our k_counts
+  expected_k_counts <- k_expected_poisson * k
+  
+  
+  k_chi_squared<- sum((observed_k_counts - expected_k_counts)^2 / expected_k_counts)
+  k_p_val <- c(k_p_val, pchisq(k_chi_squared, df = max(k_count) - 2, lower.tail = FALSE))
+  
+}
+# Bringing it all together in a dataframe
+final_table <- data.frame(palindrome_intervals, k_intervals, lambda_hat_k, max_count_k, k_p_val)
+```
+```{r}
+final_table
+```

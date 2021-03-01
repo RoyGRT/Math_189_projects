@@ -1,0 +1,102 @@
+---
+title: "Proj. 1 Kurtosis/Skewness"
+date: "1/23/2021"
+output:
+  pdf_document: default
+  html_document: default
+---
+```{r setup, include=FALSE, echo=FALSE}
+r <- getOption("repos")
+r["CRAN"] <- "http://cran.cnr.berkeley.edu/"
+options(repos = r)
+```
+install.packages('moments')
+install.packages('plyr')
+install.packages('car')
+library(moments)
+library(plyr)
+library(car)
+# Import and clean babies23 dataset
+both_raw <- read.csv("babies23 (1).csv")
+both <- both_raw[which(both_raw['smoke']!=9),
+c('smoke','wt','gestation')]
+# Add a column indicating whether or not the mother smoked during pregnancy
+smoked <- c()
+for(i in 1:nrow(both)) {
+  #determining if the person is a smoker or non-smoker 
+ if(both[i,'smoke']>= 1) # Smoked
+ smoked <- c(smoked, 'Smoker')
+ else
+ smoked <- c(smoked, 'Non-Smoker')
+}
+both <- cbind(both, smoked)
+
+# Population Skewness and Kurtosis for both smoking statuses
+kurtosis(rnorm(nrow(nonsmoker)))
+kurtosis(rnorm(nrow(smoker)))
+
+skewness(rnorm(nrow(nonsmoker)))
+skewness(rnorm(nrow(smoker)))
+
+
+# Add a column with standardized weights
+std_wt <- (both$wt- mean(both$wt))/sd(both$wt)
+both <- cbind(both, std_wt)
+
+# Separating our dataset into subgroups of smoker and non-smokers
+nonsmoker <- both[which(both$smoked=='Non-Smoker'),]
+smoker <- both[which(both$smoked=='Smoker'),]
+
+# Setting up the results for normal dist. skewness & kurtosis
+normal_skewness <- c()
+normal_kurtosis <- c()
+# Setting up the results for non-smoker skewness & kurtosis
+nonsmoker_skewness <- c()
+nonsmoker_kurtosis <- c()
+# Setting up the results for smoker skewness & kurtosis
+smoker_skewness <- c()
+smoker_kurtosis <- c()
+
+#Bootstapping Process
+for(i in 1:1000) {
+#concatenating normal skewness of nonsmoker
+ normal_skewness <- c(normal_skewness,
+skewness(rnorm(nrow(nonsmoker))))
+ #concatenating normal kurtosis of smoker
+ normal_kurtosis <- c(normal_kurtosis,
+kurtosis(rnorm(nrow(nonsmoker))))
+
+ #concatenating skewness of nonsmoker
+ nonsmoker_skewness <- c(nonsmoker_skewness,
+skewness(sample(nonsmoker$wt,size=nrow(nonsmoker),replace=TRUE)))
+ #concacatenating kurtosis of nonsmoker
+ nonsmoker_kurtosis <- c(nonsmoker_kurtosis,
+kurtosis(sample(nonsmoker$wt,size=nrow(nonsmoker),replace=TRUE)))
+
+#concatenating skewness of smoker
+ smoker_skewness <- c(smoker_skewness,
+skewness(sample(smoker$wt,size=nrow(smoker),replace=TRUE)))
+ #concatenating kurtosis of smoker
+ smoker_kurtosis <- c(smoker_kurtosis,
+kurtosis(sample(smoker$wt,size=nrow(smoker),replace=TRUE)))
+}
+# Creating Histograms of Normal MC, Smoker, and Non-Smoker Skewness/Kurtosis,
+breaks <- seq(-1,1,by=0.1)
+hist(main='Skewness Coefficients based on Monte Carlo Distributions', normal_skewness, col=rgb(.6,0.5,0.25,1/4), breaks=breaks,
+ylim=c(0,400))
+
+hist(nonsmoker_skewness, col=rgb(1,0,0,1/4), breaks=breaks, add=TRUE)
+hist(smoker_skewness, col=rgb(0,0,1,1/4), breaks=breaks, add=TRUE)
+
+legend('topright', c('Normal Dist', "Smoker Dist", "Nonsmoker Dist"),
+col=c(rgb(.6,0.5,0.25,1/4),rgb(1,0,0,1/4),rgb(0,0,1,1/4)), lwd = 4, cex=0.8)
+breaks <- seq(2,6,by=0.15)
+
+hist(main='Kurtosis Coefficients based on Monte Carlo Distributions', normal_kurtosis, col=rgb(.6,0.5,0.25,1/4), breaks=breaks,
+ylim=c(0,400))
+
+hist(nonsmoker_kurtosis, col=rgb(0.5,.6,0,.4), breaks=breaks, add=TRUE)
+hist(smoker_kurtosis, col=rgb(0,0,1,.4), breaks=breaks, add=TRUE)
+
+legend('topright', c('Normal Dist', "Smoker Dist", "Nonsmoker Dist"),
+col=c(rgb(.6,0.5,0.25,1/4),rgb(1,0,0,.4),rgb(0,0,1,.4)), lwd = 4, cex=0.8)
